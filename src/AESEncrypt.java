@@ -136,14 +136,15 @@ public class AESEncrypt {
     }
 
     private int[] xor(int[] one, int[] two){
+        int[] temp = new int[one.length];
         for(int i = 0; i < one.length; i++){
-            one[i]^= two[i];
+            temp[i] = one[i] ^ two[i];
         }
-        return one;
+        return temp;
     }
 
-    private int[] rotWord(int[] expandedKey){
-        int[] temp = {expandedKey[1], expandedKey[2], expandedKey[3], expandedKey[0]};
+    private int[] rotWord(int[] word){
+        int[] temp = {word[1], word[2], word[3], word[0]};
         return temp;
     }
 
@@ -152,20 +153,8 @@ public class AESEncrypt {
         return temp;
     }
 
-    private void setKey(int[][] expandedKey, String line){
-        int column = 0;
-        for(int row = 0; row < 4; row++){
-            expandedKey[row][column] = 0;
-        }
-        for(int i = 0; i < line.length(); i++){
-            expandedKey[i/8][column] = (expandedKey[i/8][column] << 4) + hexVal(line.charAt(i));
-            System.out.println(i/8);
-        }
-    }
-
     private int[][] createState() throws IOException{
         ArrayList<String> lines = getLines(plainTextFile);
-        System.out.println(lines.toString());
         int[][] state = new int[4][lines.size() * 4];
         return createGrid(lines, state);
     }
