@@ -106,22 +106,6 @@ public class AESEncrypt {
         int[][] expandedkey = new int[4][44];
         createGrid(getLines(key), expandedkey);
         
-        // for (int column = 4; column < 44; column++){
-        //     int[] temp = new int[4];
-        //     if (column % 4 == 0){
-        //         temp = EK(expandedkey, column-4);
-        //         for(int i =0; i < 4; i++){
-        //             // temp[i] = subWord(rotWord(EK(expandedkey, column-4)))[0] ^ Rcon[(column/4) - 1];
-        //             System.out.print(" " + temp[i]);
-
-        //         }
-        //         temp = xor(temp, EK(expandedkey, column-4));
-
-        //     }else {
-        //         temp = xor(EK(expandedkey, column - 1), EK(expandedkey, column - 4));
-        //     }
-        //     
-        // }
         int[] temp = new int[4];
         for(int column = 4; column < 44; column++){
             //get W(column-1)
@@ -131,7 +115,6 @@ public class AESEncrypt {
                 temp = rotWord(temp);
                 temp = subWord(temp);
             }
-            
             // xor_1 : W(column - 4) ^ W(column-1)
             temp = xor(EK(expandedkey, column-4), temp);
 
@@ -145,8 +128,7 @@ public class AESEncrypt {
             expandedkey[2][column] = temp[2];
             expandedkey[3][column] = temp[3];
         }
-
-
+        
         return expandedkey;
     }
 
@@ -188,6 +170,38 @@ public class AESEncrypt {
         // System.out.print(Integer.toHexString(expandedKey[3][column]) + " \n");
         int[] temp = {expandedKey[0][column], expandedKey[1][column], expandedKey[2][column], expandedKey[3][column]};
         return temp;
+    }
+
+    private void shiftRows(int[][] state){
+        /*  shift block by rows
+        *   a b c d ->(0 shifts) a b c d
+        *   e f g h ->(1 shifts) f g h e
+        *   i j k l ->(2 shifts) k l i j
+        *   m n o p ->(3 shifts) p m n o
+        */
+        int[] row;
+        int temp;
+        int index;
+        for(int i = 1; i < 4; i++){
+            row = state[i];
+            index = 0;
+            while(index < i){
+                temp = row[0];
+                row[0] = row[1];
+                row[1] = row[2];
+                row[2] = row[3];
+                row[3] = temp;
+                index++;
+            }
+            state[i] = row;
+        }
+    }
+
+    private void addRoundKey(int[][] state, int[][] key){
+        /*
+        *   xor with key
+        *   
+        */
     }
 
     private int[][] createState() throws IOException{
