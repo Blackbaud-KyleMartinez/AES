@@ -60,6 +60,15 @@ public class AESEncrypt {
             { 0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D }
     };
 
+    private int[][] Rcon = {
+
+        {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36},
+        {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+        {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+        {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+    };
+
+
 
     public AESEncrypt(BufferedReader key, BufferedReader inputFile, BufferedWriter outputFile){
         this.key = key;
@@ -83,7 +92,7 @@ public class AESEncrypt {
         System.out.println("KEY EXPANSION");
         for(int i = 0; i < 4; i++)
         {
-            for(int j = 0; j < 44; j++)
+            for(int j = 0; j < 8; j++)
             {
                 System.out.print(Integer.toHexString(keyExpansion[i][j]) + " ");
 
@@ -96,41 +105,73 @@ public class AESEncrypt {
     private int[][] keyExpansion() throws IOException{
         int[][] expandedkey = new int[4][44];
         createGrid(getLines(key), expandedkey);
-        int Rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
-        for (int i=0;i<10;i++) Rcon[i] = (Rcon[i] << 24);
+        
+        // for (int column = 4; column < 44; column++){
+        //     int[] temp = new int[4];
+        //     if (column % 4 == 0){
+        //         temp = EK(expandedkey, column-4);
+        //         for(int i =0; i < 4; i++){
+        //             // temp[i] = subWord(rotWord(EK(expandedkey, column-4)))[0] ^ Rcon[(column/4) - 1];
+        //             System.out.print(" " + temp[i]);
 
+        //         }
+        //         temp = xor(temp, EK(expandedkey, column-4));
 
-        for (int column = 4; column < 44; column++){
-            int[] temp = new int[4];
-            if (column % 4 == 0){
-                for(int i =0; i < 4; i++){
-                    temp[i] = subWord(rotWord(EK(expandedkey, column-4)))[0] ^ Rcon[(column/4) - 1];
-                }
-                temp = xor(temp, EK(expandedkey, column-4));
-
-            }else {
-                temp = xor(EK(expandedkey, column - 1), EK(expandedkey, column - 4));
+        //     }else {
+        //         temp = xor(EK(expandedkey, column - 1), EK(expandedkey, column - 4));
+        //     }
+        //     
+        // }
+        int[] temp = new int[4];
+        int[] xor_1 = new int[4];
+        for(int column = 4; column < 8; column++){
+            //get W(column-1)
+            System.out.println("ON column: "+ column);
+            temp = EK(expandedkey, column-1);
+            if(column % 4 == 0){
+                //rotate and substitute if first column of block
+                System.out.println(" 1st block ");
+                temp = rotWord(temp);
+                temp = subWord(temp);
+                System.out.println("Temp @ column: "+column +":  "+Integer.toHexString(temp[0]) + " " + Integer.toHexString(temp[1]) + " " + Integer.toHexString(temp[2]) + " " + Integer.toHexString(temp[3]));
             }
+            
+            
+            // xor_1 : W(column - 4) ^ W(column)
+            temp = xor(EK(expandedkey, column-4), temp);
+
+            if(column % 4 == 0){
+                int[] rcon = Rcon[(column/4) - 1];
+                temp = xor(temp, rcon);
+            }
+
             expandedkey[0][column] = temp[0];
             expandedkey[1][column] = temp[1];
             expandedkey[2][column] = temp[2];
             expandedkey[3][column] = temp[3];
+            System.out.println("Temp @ column: "+column +":  "+Integer.toHexString(temp[0]) + " " + Integer.toHexString(temp[1]) + " " + Integer.toHexString(temp[2]) + " " + Integer.toHexString(temp[3]));
         }
+
 
         return expandedkey;
     }
 
-    private int[] subWord(int[] expandedKey){
+    private int[] subWord(int[] eKey){
         int[] temp = new int[4];
+        //hex to subox example: ca -> c:rows, a:columns
+        System.out.println("SUB");
         for (int i = 0; i < 4; i++){
-            String hex = Integer.toHexString(expandedKey[i]);
+            String hex = Integer.toHexString(eKey[i]);
+            // System.out.println(hex);
             if (hex.length() == 1){
                 hex = "0" + hex;
             }
-            String row = hex.substring(1, 2);
-            String column = hex.substring(0, 1);
+            String row = hex.substring(0, 1);
+            String column = hex.substring(1, 2);
+            // System.out.println("row: " +row + " column: "+column);
 
             temp[i] = sBox[Integer.parseInt(row, 16)][Integer.parseInt(column, 16)];
+            // System.out.println("Sbox: "+ Integer.toHexString(temp[i]));
         }
         return temp;
     }
@@ -143,12 +184,17 @@ public class AESEncrypt {
         return temp;
     }
 
-    private int[] rotWord(int[] word){
+    private int[] rotWord(int[] word){     
+        System.out.println("ROT");
         int[] temp = {word[1], word[2], word[3], word[0]};
         return temp;
     }
 
     private int[] EK(int[][] expandedKey, int column){
+        System.out.print(Integer.toHexString(expandedKey[0][column]) + " ");
+        System.out.print(Integer.toHexString(expandedKey[1][column]) + " ");
+        System.out.print(Integer.toHexString(expandedKey[2][column]) + " ");
+        System.out.print(Integer.toHexString(expandedKey[3][column]) + " \n");
         int[] temp = {expandedKey[0][column], expandedKey[1][column], expandedKey[2][column], expandedKey[3][column]};
         return temp;
     }
@@ -219,3 +265,4 @@ public class AESEncrypt {
     }
 
 }
+
