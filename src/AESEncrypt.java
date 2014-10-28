@@ -92,7 +92,7 @@ public class AESEncrypt {
         System.out.println("KEY EXPANSION");
         for(int i = 0; i < 4; i++)
         {
-            for(int j = 0; j < 8; j++)
+            for(int j = 0; j < 44; j++)
             {
                 System.out.print(Integer.toHexString(keyExpansion[i][j]) + " ");
 
@@ -123,25 +123,20 @@ public class AESEncrypt {
         //     
         // }
         int[] temp = new int[4];
-        int[] xor_1 = new int[4];
-        for(int column = 4; column < 8; column++){
+        for(int column = 4; column < 44; column++){
             //get W(column-1)
-            System.out.println("ON column: "+ column);
             temp = EK(expandedkey, column-1);
             if(column % 4 == 0){
                 //rotate and substitute if first column of block
-                System.out.println(" 1st block ");
                 temp = rotWord(temp);
                 temp = subWord(temp);
-                System.out.println("Temp @ column: "+column +":  "+Integer.toHexString(temp[0]) + " " + Integer.toHexString(temp[1]) + " " + Integer.toHexString(temp[2]) + " " + Integer.toHexString(temp[3]));
             }
             
-            
-            // xor_1 : W(column - 4) ^ W(column)
+            // xor_1 : W(column - 4) ^ W(column-1)
             temp = xor(EK(expandedkey, column-4), temp);
 
             if(column % 4 == 0){
-                int[] rcon = Rcon[(column/4) - 1];
+                int[] rcon = {Rcon[0][(column/4) - 1], Rcon[1][(column/4) - 1], Rcon[2][(column/4) - 1], Rcon[3][(column/4) - 1]};
                 temp = xor(temp, rcon);
             }
 
@@ -149,7 +144,6 @@ public class AESEncrypt {
             expandedkey[1][column] = temp[1];
             expandedkey[2][column] = temp[2];
             expandedkey[3][column] = temp[3];
-            System.out.println("Temp @ column: "+column +":  "+Integer.toHexString(temp[0]) + " " + Integer.toHexString(temp[1]) + " " + Integer.toHexString(temp[2]) + " " + Integer.toHexString(temp[3]));
         }
 
 
@@ -159,19 +153,15 @@ public class AESEncrypt {
     private int[] subWord(int[] eKey){
         int[] temp = new int[4];
         //hex to subox example: ca -> c:rows, a:columns
-        System.out.println("SUB");
         for (int i = 0; i < 4; i++){
             String hex = Integer.toHexString(eKey[i]);
-            // System.out.println(hex);
             if (hex.length() == 1){
                 hex = "0" + hex;
             }
             String row = hex.substring(0, 1);
             String column = hex.substring(1, 2);
-            // System.out.println("row: " +row + " column: "+column);
 
             temp[i] = sBox[Integer.parseInt(row, 16)][Integer.parseInt(column, 16)];
-            // System.out.println("Sbox: "+ Integer.toHexString(temp[i]));
         }
         return temp;
     }
@@ -179,22 +169,23 @@ public class AESEncrypt {
     private int[] xor(int[] one, int[] two){
         int[] temp = new int[one.length];
         for(int i = 0; i < one.length; i++){
-            temp[i] = one[i] ^ two[i];
+            String hexone = Integer.toHexString(one[i]);
+            String hextwo = Integer.toHexString(two[i]);
+            temp[i] = (Integer.parseInt(hexone, 16)) ^ (Integer.parseInt(hextwo, 16));
         }
         return temp;
     }
 
     private int[] rotWord(int[] word){     
-        System.out.println("ROT");
         int[] temp = {word[1], word[2], word[3], word[0]};
         return temp;
     }
 
     private int[] EK(int[][] expandedKey, int column){
-        System.out.print(Integer.toHexString(expandedKey[0][column]) + " ");
-        System.out.print(Integer.toHexString(expandedKey[1][column]) + " ");
-        System.out.print(Integer.toHexString(expandedKey[2][column]) + " ");
-        System.out.print(Integer.toHexString(expandedKey[3][column]) + " \n");
+        // System.out.print(Integer.toHexString(expandedKey[0][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[1][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[2][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[3][column]) + " \n");
         int[] temp = {expandedKey[0][column], expandedKey[1][column], expandedKey[2][column], expandedKey[3][column]};
         return temp;
     }
