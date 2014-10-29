@@ -2,6 +2,8 @@ import javax.imageio.event.IIOWriteProgressListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.lang.Integer;
+import java.lang.System;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,18 +92,8 @@ public class AESEncrypt {
         String line;
         while((line = plainTextFile.readLine()) != null){
             state = createGrid(getLine(line), new int[4][4]);
-            System.out.println("STATE");
-            for(int i = 0; i < 4; i++)
-            {
-                for(int j = 0; j < 4; j++)
-                {
-                    System.out.print(Integer.toHexString(state[i][j]) + " ");
-                }
-                System.out.println();
-            }
+            printState();
             expandedKey = keyExpansion();
-
-
 
             System.out.println("KEY EXPANSION");
             for(int i = 0; i < 4; i++)
@@ -114,22 +106,59 @@ public class AESEncrypt {
                 System.out.println();
             }
 
-            int keyBlock = 0;
-            addRoundKey(keyBlock, state);
+            int round = 0;
+            addRoundKey(round, state);
 
-            for(int round = 1; round < 11; round++){
-                subBytes();
+            for(round = 1; round < 10; round++){
+                subBytes(state);
                 shiftRows(state);
-                if ( round != 11)
-                    mixColumns();
+                mixColumns();
                 addRoundKey(round, state);
             }
+
+            subBytes(state);
+            shiftRows(state);
+            addRoundKey(round, state);
+            String encryptedLine = getStringFromState();
+            encryptedFile.write(encryptedLine + "\n");
         }
 
-
+        encryptedFile.close();
     }
 
-    private void subBytes(){
+    private String getStringFromState(){
+        String x = "";
+        for(int column = 0; column < 4; column++){
+            for(int row = 0; row < 4; row++){
+                String temp = Integer.toHexString(state[row][column]);
+                if (temp.length() == 1){
+                    temp = "0" + temp;
+                }
+                x += temp;
+            }
+        }
+        return x;
+    }
+
+    private void printState(){
+        System.out.println("STATE");
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 4; j++)
+            {
+                System.out.print(Integer.toHexString(state[i][j]) + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    private void subBytes(int[][] state){
+        for(int row = 0; row < 4; row++){
+            int[] temp = state[row];
+            temp = subWord(temp);
+            state[row] = temp;
+            //printState();
+        }
 
     }
 
@@ -216,6 +245,7 @@ public class AESEncrypt {
         *   i j k l ->(2 shifts) k l i j
         *   m n o p ->(3 shifts) p m n o
         */
+     //   printState();
         int[] row;
         int temp;
         int index;
@@ -232,6 +262,8 @@ public class AESEncrypt {
             }
             state[i] = row;
         }
+       // System.out.println("after shift rows");
+        //printState();
     }
 
     private void addRoundKey(int block, int[][] state){
