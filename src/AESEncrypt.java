@@ -11,7 +11,7 @@ import java.util.Arrays;
  */
 public class AESEncrypt {
 
-    private BufferedReader key;
+    private String key;
     private BufferedReader plainTextFile;
     private BufferedWriter encryptedFile;
 
@@ -68,43 +68,80 @@ public class AESEncrypt {
         {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
     };
 
+    private int[][] state;
+    private int[][] expandedKey;
+
 
 
     public AESEncrypt(BufferedReader key, BufferedReader inputFile, BufferedWriter outputFile){
-        this.key = key;
-        plainTextFile = inputFile;
-        encryptedFile = outputFile;
+        try{
+            this.key = getLine(key.readLine());
+            plainTextFile = inputFile;
+            encryptedFile = outputFile;
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 
     public void encrypt() throws IOException{
-        int[][] state = createState();
-        int[][] keyExpansion = keyExpansion();
-        System.out.println("STATE");
-        for(int i = 0; i < 4; i++)
-        {
-            for(int j = 0; j < 8; j++)
+
+
+        String line;
+        while((line = plainTextFile.readLine()) != null){
+            state = createGrid(getLine(line), new int[4][4]);
+            System.out.println("STATE");
+            for(int i = 0; i < 4; i++)
             {
-                System.out.print(Integer.toHexString(state[i][j]) + " ");
+                for(int j = 0; j < 4; j++)
+                {
+                    System.out.print(Integer.toHexString(state[i][j]) + " ");
+                }
+                System.out.println();
             }
-            System.out.println();
+            expandedKey = keyExpansion();
+
+
+
+            System.out.println("KEY EXPANSION");
+            for(int i = 0; i < 4; i++)
+            {
+                for(int j = 0; j < 44; j++)
+                {
+                    System.out.print(Integer.toHexString(expandedKey[i][j]) + " ");
+
+                }
+                System.out.println();
+            }
+
+            int keyBlock = 0;
+            addRoundKey(keyBlock, state);
+
+            for(int round = 1; round < 11; round++){
+                subBytes();
+                shiftRows(state);
+                if ( round != 11)
+                    mixColumns();
+                addRoundKey(round, state);
+            }
         }
 
-        System.out.println("KEY EXPANSION");
-        for(int i = 0; i < 4; i++)
-        {
-            for(int j = 0; j < 44; j++)
-            {
-                System.out.print(Integer.toHexString(keyExpansion[i][j]) + " ");
-
-            }
-            System.out.println();
-        }
 
     }
 
+    private void subBytes(){
+
+    }
+
+    private void mixColumns(){
+
+    }
+
+
+
     private int[][] keyExpansion() throws IOException{
         int[][] expandedkey = new int[4][44];
-        createGrid(getLines(key), expandedkey);
+        createGrid(getLine(key), expandedkey);
         
         int[] temp = new int[4];
         for(int column = 4; column < 44; column++){
@@ -197,32 +234,30 @@ public class AESEncrypt {
         }
     }
 
-    private void addRoundKey(int[][] state, int[][] key){
+    private void addRoundKey(int block, int[][] state){
         /*
         *   xor with key
-        *   
+        *
         */
-    }
-
-    private int[][] createState() throws IOException{
-        ArrayList<String> lines = getLines(plainTextFile);
-        int[][] state = new int[4][lines.size() * 4];
-        return createGrid(lines, state);
-    }
-
-    private int[][] createGrid(ArrayList<String> lines, int[][] grid){
-        int block = 0;
-        for(int i = 0; i < lines.size(); i++){
-            String line = lines.get(i);
-            int lineIndex = 0;
-            for (int column = block * 4; column < block * 4 + 4; column++){
-                for ( int row = 0; row < 4; row++){
-                    grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
-                    grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
-                }
+        for(int column = 0; column < 4; column++){
+            for(int row = 0; row < 4; row++){
+                String hexone = Integer.toHexString(state[row][column]);
+                String hextwo = Integer.toHexString(expandedKey[row][column + (block * 4)]);
+                //System.out.println(hexone + " ^ " + hextwo + " = " + Integer.toHexString((Integer.parseInt(hexone, 16)) ^ (Integer.parseInt(hextwo, 16))));
+                state[row][column] = (Integer.parseInt(hexone, 16)) ^ (Integer.parseInt(hextwo, 16));
             }
-            block++;
         }
+    }
+
+    private int[][] createGrid(String line, int[][] grid){
+        int lineIndex = 0;
+        for (int column = 0; column < 4; column++){
+            for ( int row = 0; row < 4; row++){
+                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
+                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
+            }
+        }
+
         return grid;
     }
 
