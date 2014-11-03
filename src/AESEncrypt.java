@@ -2,11 +2,15 @@ import javax.imageio.event.IIOWriteProgressListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.lang.Exception;
 import java.lang.Integer;
 import java.lang.System;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 /**
  * Created by kyle on 10/24/14.
@@ -114,63 +118,68 @@ public class AESEncrypt {
     public AESEncrypt(BufferedReader key, BufferedReader inputFile, BufferedWriter outputFile){
         try{
             this.key = getLine(key.readLine());
-            plainTextFile = inputFile;
-            encryptedFile = outputFile;
         } catch (IOException e){
             e.printStackTrace();
         }
+        plainTextFile = inputFile;
+        encryptedFile = outputFile;
 
     }
 
     public void encrypt() throws IOException{
 
-
+        if(!validLine(key)){
+            System.out.println("key contains invalid characters");
+            return;
+        }
         String line;
         while((line = plainTextFile.readLine()) != null){
-            state = createGrid(getLine(line), new int[4][4]);
-            printState();
-            expandedKey = keyExpansion();
+            if(validLine(getLine(line))){
+                state = createGrid(getLine(line), new int[4][4]);
+                printState();
+                expandedKey = keyExpansion();
 
-            System.out.println("KEY EXPANSION");
-            for(int i = 0; i < 4; i++)
-            {
-                for(int j = 0; j < 44; j++)
+                System.out.println("KEY EXPANSION");
+                for(int i = 0; i < 4; i++)
                 {
-                    System.out.print(Integer.toHexString(expandedKey[i][j]) + " ");
+                    for(int j = 0; j < 44; j++)
+                    {
+                        System.out.print(Integer.toHexString(expandedKey[i][j]) + " ");
 
+                    }
+                    System.out.println();
                 }
-                System.out.println();
-            }
 
-            int round = 0;
-            addRoundKey(round, state);
-            System.out.println("After addRoundKey(" + round + ")");
-            printState();
-            for(round = 1; round < 10; round++){
+                int round = 0;
+                addRoundKey(round, state);
+                System.out.println("After addRoundKey(" + round + ")");
+                printState();
+                for(round = 1; round < 10; round++){
+                    subBytes(state);
+                    System.out.println("After subBytes");
+                    printState();
+                    shiftRows(state);
+                    System.out.println("After shiftRows");
+                    printState();
+                    mixColumns(state);
+                    System.out.println("After mixColums");
+                    printState();
+                    addRoundKey(round, state);
+                    System.out.println("After addRoundKey(" + round + ")");
+                    printState();
+                }
                 subBytes(state);
                 System.out.println("After subBytes");
                 printState();
                 shiftRows(state);
                 System.out.println("After shiftRows");
                 printState();
-                mixColumns(state);
-                System.out.println("After mixColums");
-                printState();
                 addRoundKey(round, state);
                 System.out.println("After addRoundKey(" + round + ")");
                 printState();
+                String encryptedLine = getStringFromState();
+                encryptedFile.write(encryptedLine + "\n");
             }
-            subBytes(state);
-            System.out.println("After subBytes");
-            printState();
-            shiftRows(state);
-            System.out.println("After shiftRows");
-            printState();
-            addRoundKey(round, state);
-            System.out.println("After addRoundKey(" + round + ")");
-            printState();
-            String encryptedLine = getStringFromState();
-            encryptedFile.write(encryptedLine + "\n");
         }
 
         encryptedFile.close();
@@ -379,10 +388,24 @@ public class AESEncrypt {
     }
 
     private String getLine(String line){
+        if (line.length() < 32){
+            do {
+                line=line+"0";
+            } while (line.length() < 32);
+
+        }else if(line.length() > 32){
+            line = line.substring(0, 32);
+        }
         return line;
     }
 
     private boolean validLine(String line){
+        line = line.toLowerCase();
+        Pattern hexPattern = Pattern.compile("([abcdef]|\\d)*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = hexPattern.matcher(line);
+        matcher.find();
+        if (matcher.group().length() < 32)
+            return false;
         return true;
     }
 
