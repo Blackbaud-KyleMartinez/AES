@@ -82,9 +82,29 @@ public class AESDecrypt {
 
     public void decrypt(){
 
+        state = createGrid(getLine(line), new int[4][4]);
+        printState();
+        expandedKey = keyExpansion();
+
+        int round = 0;
+        addRoundKey(round, state);
+
+        for(round = 1; round < 10; round++){
+            invShiftRows(state);
+            invsubBytes(state);
+            addRoundKey(round, state);
+            invMixColumn(state);
+        }
+
+        invShiftRows(state);
+        subBytes(state);
+        addRoundKey(round, state);
+
+        String decryptedLine = getStringFromState();
+        decryptedFile.write(decryptedLine + "\n");
     }
 
-    private void InvShiftRows(int[][] state){
+    private void invShiftRows(int[][] state){
         /*  shift block by rows
         *   a b c d ->(0 shifts) a b c d
         *   e f g h ->(1 shifts) h e f g
@@ -112,17 +132,17 @@ public class AESDecrypt {
        //printState();
     }
 
-    private void InvsubBytes(int[][] state){
+    private void invsubBytes(int[][] state){
         for(int row = 0; row < 4; row++){
             int[] temp = state[row];
-            temp = InvSubWord(temp);
+            temp = invSubWord(temp);
             state[row] = temp;
             //printState();
         }
 
     }
 
-    private int[] InvSubWord(int[] eKey){
+    private int[] invSubWord(int[] eKey){
         int[] temp = new int[4];
         //hex to subox example: ca -> c:rows, a:columns
         for (int i = 0; i < 4; i++){
@@ -191,6 +211,37 @@ public class AESDecrypt {
         st[2][c] = (byte)(mul(0xE,a[2]) ^ mul(0xB,a[3]) ^ mul(0xD, a[0]) ^ mul(0x9,a[1]));
         st[3][c] = (byte)(mul(0xE,a[3]) ^ mul(0xB,a[0]) ^ mul(0xD, a[1]) ^ mul(0x9,a[2]));
      }
+
+
+    private int[][] keyExpansion() throws IOException{
+        int[][] expandedkey = new int[4][44];
+        createGrid(getLine(key), expandedkey);
+        
+        int[] temp = new int[4];
+        for(int column = 4; column < 44; column++){
+            //get W(column-1)
+            temp = EK(expandedkey, column-1);
+            if(column % 4 == 0){
+                //rotate and substitute if first column of block
+                temp = rotWord(temp);
+                temp = subWord(temp);
+            }
+            // xor_1 : W(column - 4) ^ W(column-1)
+            temp = xor(EK(expandedkey, column-4), temp);
+
+            if(column % 4 == 0){
+                int[] rcon = {Rcon[0][(column/4) - 1], Rcon[1][(column/4) - 1], Rcon[2][(column/4) - 1], Rcon[3][(column/4) - 1]};
+                temp = xor(temp, rcon);
+            }
+
+            expandedkey[0][column] = temp[0];
+            expandedkey[1][column] = temp[1];
+            expandedkey[2][column] = temp[2];
+            expandedkey[3][column] = temp[3];
+        }
+        
+        return expandedkey;
+    }
 
 
     private void printState(){
