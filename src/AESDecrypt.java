@@ -131,24 +131,51 @@ public class AESDecrypt {
             state = createGrid(getLine(line), new int[4][4]);
             printState();
             expandedKey = keyExpansion();
+            System.out.println("KEY EXPANSION");
+            for(int i = 0; i < 4; i++)
+            {
+                for(int j = 0; j < 44; j++)
+                {
+                    System.out.print(Integer.toHexString(expandedKey[i][j]) + " ");
+
+                }
+                System.out.println();
+            }
 
             int round = 10;
             addRoundKey(round, state);
-
+            System.out.println("After addRoundKey(" + round+ ")");
+            System.out.println(getStringFromState());
             for (round = 9; round >= 1; round--) {
                 invShiftRows(state);
+                System.out.println("After invShiftRows");
+                System.out.println(getStringFromState());
                 invsubBytes(state);
+                System.out.println("After insubBytes");
+                System.out.println(getStringFromState());
                 addRoundKey(round, state);
+                System.out.println("After addRoundKey(" + round+ ")");
+                System.out.println(getStringFromState());
                 invMixColumn(state);
+                System.out.println("After inMixcolumn");
+                System.out.println(getStringFromState());
             }
 
             invShiftRows(state);
+            System.out.println("After invShiftRows");
+            System.out.println(getStringFromState());
             invsubBytes(state);
+            System.out.println("After insubBytes");
+            System.out.println(getStringFromState());
             addRoundKey(round, state);
+            System.out.println("After addRoundKey(" + round+ ")");
+            System.out.println(getStringFromState());
 
             String decryptedLine = getStringFromState();
+            System.out.println(decryptedLine);
             decryptedFile.write(decryptedLine + "\n");
         }
+        decryptedFile.close();
     }
 
     private int[][] createGrid(String line, int[][] grid){
