@@ -368,8 +368,8 @@ public class AESEncrypt {
         int lineIndex = 0;
         for (int column = 0; column < 4; column++){
             for ( int row = 0; row < 4; row++){
-                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
-                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
+                grid[row][column] = Integer.parseInt(line.substring(lineIndex++, lineIndex), 16);
+                grid[row][column] = (grid[row][column] << 4) + Integer.parseInt(line.substring(lineIndex++, lineIndex), 16);
             }
         }
 
