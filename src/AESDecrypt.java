@@ -221,9 +221,9 @@ public class AESDecrypt {
             while(index < i){
                 temp = row[0];
                 row[0] = row[3];
-                row[1] = row[2];
+                row[3] = row[2];
                 row[2] = row[1];
-                row[3] = temp;
+                row[1] = temp;
                 index++;
             }
             state[i] = row;
