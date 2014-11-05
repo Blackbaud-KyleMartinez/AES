@@ -1,15 +1,45 @@
+import javax.imageio.event.IIOWriteProgressListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
+import java.lang.Exception;
+import java.lang.Integer;
+import java.lang.System;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by kyle on 10/24/14.
  */
 public class AESDecrypt {
 
-    private BufferedReader key;
+    private String key;
     private BufferedReader encryptedFile;
     private BufferedWriter decryptedFile;
 
+
+    final static int[][] sBox = {
+
+            { 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76  } ,
+            { 0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0  } ,
+            { 0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15  } ,
+            { 0x04, 0xC7, 0x23, 0xC3, 0x18, 0x96, 0x05, 0x9A, 0x07, 0x12, 0x80, 0xE2, 0xEB, 0x27, 0xB2, 0x75  } ,
+            { 0x09, 0x83, 0x2C, 0x1A, 0x1B, 0x6E, 0x5A, 0xA0, 0x52, 0x3B, 0xD6, 0xB3, 0x29, 0xE3, 0x2F, 0x84  } ,
+            { 0x53, 0xD1, 0x00, 0xED, 0x20, 0xFC, 0xB1, 0x5B, 0x6A, 0xCB, 0xBE, 0x39, 0x4A, 0x4C, 0x58, 0xCF  } ,
+            { 0xD0, 0xEF, 0xAA, 0xFB, 0x43, 0x4D, 0x33, 0x85, 0x45, 0xF9, 0x02, 0x7F, 0x50, 0x3C, 0x9F, 0xA8  } ,
+            { 0x51, 0xA3, 0x40, 0x8F, 0x92, 0x9D, 0x38, 0xF5, 0xBC, 0xB6, 0xDA, 0x21, 0x10, 0xFF, 0xF3, 0xD2  } ,
+            { 0xCD, 0x0C, 0x13, 0xEC, 0x5F, 0x97, 0x44, 0x17, 0xC4, 0xA7, 0x7E, 0x3D, 0x64, 0x5D, 0x19, 0x73  } ,
+            { 0x60, 0x81, 0x4F, 0xDC, 0x22, 0x2A, 0x90, 0x88, 0x46, 0xEE, 0xB8, 0x14, 0xDE, 0x5E, 0x0B, 0xDB  } ,
+            { 0xE0, 0x32, 0x3A, 0x0A, 0x49, 0x06, 0x24, 0x5C, 0xC2, 0xD3, 0xAC, 0x62, 0x91, 0x95, 0xE4, 0x79  } ,
+            { 0xE7, 0xC8, 0x37, 0x6D, 0x8D, 0xD5, 0x4E, 0xA9, 0x6C, 0x56, 0xF4, 0xEA, 0x65, 0x7A, 0xAE, 0x08  } ,
+            { 0xBA, 0x78, 0x25, 0x2E, 0x1C, 0xA6, 0xB4, 0xC6, 0xE8, 0xDD, 0x74, 0x1F, 0x4B, 0xBD, 0x8B, 0x8A  } ,
+            { 0x70, 0x3E, 0xB5, 0x66, 0x48, 0x03, 0xF6, 0x0E, 0x61, 0x35, 0x57, 0xB9, 0x86, 0xC1, 0x1D, 0x9E  } ,
+            { 0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF  } ,
+            { 0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16  }
+    };
 
     /*
      * Inverse sBox. Used for Decryption
@@ -73,35 +103,78 @@ public class AESDecrypt {
             57,  75, 221, 124, 132, 151, 162, 253,  28,  36, 108, 180, 199,  82, 246,   1};
 
 
+    final static int[][] Rcon = {
+
+            {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36},
+            {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+            {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+            {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+    };
+
+    private int[][] state;
+    private int[][] expandedKey;
 
     public AESDecrypt(BufferedReader key, BufferedReader inputFile, BufferedWriter outputFile){
-        this.key = key;
+        try{
+            this.key = getLine(key.readLine());
+        } catch (IOException e){
+            e.printStackTrace();
+        }
         encryptedFile = inputFile;
         decryptedFile = outputFile;
     }
 
-    public void decrypt(){
+    public void decrypt() throws IOException{
 
-        state = createGrid(getLine(line), new int[4][4]);
-        printState();
-        expandedKey = keyExpansion();
+        String line;
+        while((line = encryptedFile.readLine()) != null) {
+            state = createGrid(getLine(line), new int[4][4]);
+            printState();
+            expandedKey = keyExpansion();
 
-        int round = 0;
-        addRoundKey(round, state);
+            int round = 10;
+            addRoundKey(round, state);
 
-        for(round = 1; round < 10; round++){
+            for (round = 9; round >= 1; round--) {
+                invShiftRows(state);
+                invsubBytes(state);
+                addRoundKey(round, state);
+                invMixColumn(state);
+            }
+
             invShiftRows(state);
             invsubBytes(state);
             addRoundKey(round, state);
-            invMixColumn(state);
+
+            String decryptedLine = getStringFromState();
+            decryptedFile.write(decryptedLine + "\n");
+        }
+    }
+
+    private int[][] createGrid(String line, int[][] grid){
+        int lineIndex = 0;
+        for (int column = 0; column < 4; column++){
+            for ( int row = 0; row < 4; row++){
+                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
+                grid[row][column] = (grid[row][column] << 4) +  hexVal(line.charAt(lineIndex++));
+            }
         }
 
-        invShiftRows(state);
-        subBytes(state);
-        addRoundKey(round, state);
+        return grid;
+    }
 
-        String decryptedLine = getStringFromState();
-        decryptedFile.write(decryptedLine + "\n");
+    private String getStringFromState(){
+        String x = "";
+        for(int column = 0; column < 4; column++){
+            for(int row = 0; row < 4; row++){
+                String temp = Integer.toHexString(state[row][column]);
+                if (temp.length() == 1){
+                    temp = "0" + temp;
+                }
+                x += temp;
+            }
+        }
+        return x;
     }
 
     private void invShiftRows(int[][] state){
@@ -153,7 +226,7 @@ public class AESDecrypt {
             String row = hex.substring(0, 1);
             String column = hex.substring(1, 2);
 
-            temp[i] = invSBox[Integer.parseInt(row, 16)][Integer.parseInt(column, 16)];
+            temp[i] = invSbox[Integer.parseInt(row, 16)][Integer.parseInt(column, 16)];
         }
         return temp;
     }   
@@ -199,19 +272,20 @@ public class AESDecrypt {
             return 0;
     }
 
-    public void invMixColumn (int c) {
-        byte a[] = new byte[4];
-        
-        // note that a is just a copy of st[.][c]
-        for (int i = 0; i < 4; i++) 
-            a[i] = st[i][c];
-        
-        st[0][c] = (byte)(mul(0xE,a[0]) ^ mul(0xB,a[1]) ^ mul(0xD, a[2]) ^ mul(0x9,a[3]));
-        st[1][c] = (byte)(mul(0xE,a[1]) ^ mul(0xB,a[2]) ^ mul(0xD, a[3]) ^ mul(0x9,a[0]));
-        st[2][c] = (byte)(mul(0xE,a[2]) ^ mul(0xB,a[3]) ^ mul(0xD, a[0]) ^ mul(0x9,a[1]));
-        st[3][c] = (byte)(mul(0xE,a[3]) ^ mul(0xB,a[0]) ^ mul(0xD, a[1]) ^ mul(0x9,a[2]));
-     }
+    public void invMixColumn (int[][] state) {
+        for(int column = 0; column < 4; column++){
+            int[] temp = new int[4];
+            for(int row = 0; row < 4; row++){
+                temp[row] = state[row][column];
+            }
 
+            //covert back to int with unsigned bytes using & 0xFFs
+            state[0][column] = (mul(0xE, (byte)temp[0]) ^ mul(0xB, (byte)temp[1]) ^ mul(0xD, (byte)temp[2]) ^ mul(0x9, (byte)temp[3])) & 0xFF;
+            state[1][column] = (mul(0xE, (byte)temp[1]) ^ mul(0xB, (byte)temp[2]) ^ mul(0xD, (byte)temp[3]) ^ mul(0x9, (byte)temp[0])) & 0xFF;
+            state[2][column] = (mul(0xE, (byte)temp[2]) ^ mul(0xB, (byte)temp[3]) ^ mul(0xD, (byte)temp[0]) ^ mul(0x9, (byte)temp[1])) & 0xFF;
+            state[3][column] = (mul(0xE, (byte)temp[3]) ^ mul(0xB, (byte)temp[0]) ^ mul(0xD, (byte)temp[1]) ^ mul(0x9, (byte)temp[2])) & 0xFF;
+        }
+     }
 
     private int[][] keyExpansion() throws IOException{
         int[][] expandedkey = new int[4][44];
@@ -243,6 +317,36 @@ public class AESDecrypt {
         return expandedkey;
     }
 
+    private int[] rotWord(int[] word){
+        int[] temp = {word[1], word[2], word[3], word[0]};
+        return temp;
+    }
+
+    private int[] subWord(int[] eKey){
+        int[] temp = new int[4];
+        //hex to subox example: ca -> c:rows, a:columns
+        for (int i = 0; i < 4; i++){
+            String hex = Integer.toHexString(eKey[i]);
+            if (hex.length() == 1){
+                hex = "0" + hex;
+            }
+            String row = hex.substring(0, 1);
+            String column = hex.substring(1, 2);
+
+            temp[i] = sBox[Integer.parseInt(row, 16)][Integer.parseInt(column, 16)];
+        }
+        return temp;
+    }
+
+    private int[] EK(int[][] expandedKey, int column){
+        // System.out.print(Integer.toHexString(expandedKey[0][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[1][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[2][column]) + " ");
+        // System.out.print(Integer.toHexString(expandedKey[3][column]) + " \n");
+        int[] temp = {expandedKey[0][column], expandedKey[1][column], expandedKey[2][column], expandedKey[3][column]};
+        return temp;
+    }
+
 
     private void printState(){
         System.out.println("STATE");
@@ -254,5 +358,62 @@ public class AESDecrypt {
             }
             System.out.println();
         }
+    }
+
+    private ArrayList<String> getLines(BufferedReader file)throws IOException{
+        String line;
+        ArrayList<String> lines = new ArrayList<String>();
+        while ((line = file.readLine()) != null){
+            if (validLine(line)){
+                lines.add(getLine(line));
+            }
+        }
+        return lines;
+    }
+
+    private String getLine(String line){
+        if (line.length() < 32){
+            do {
+                line=line+"0";
+            } while (line.length() < 32);
+
+        }else if(line.length() > 32){
+            line = line.substring(0, 32);
+        }
+        return line;
+    }
+
+    private boolean validLine(String line){
+        line = line.toLowerCase();
+        Pattern hexPattern = Pattern.compile("([abcdef]|\\d)*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = hexPattern.matcher(line);
+        matcher.find();
+        if (matcher.group().length() < 32)
+            return false;
+        return true;
+    }
+
+    // Returns the integer value of a given HEX character.
+    public static int hexVal(char c) {
+        if (c >= '0' && c <= '9')
+            return (int)(c-'0');
+        else
+            return (int)(c-'A'+10);
+    }
+
+    // Converts an integer(0-15) to the appropriate HEX character.
+    public static char convToHex(int d) {
+        if (d < 10)
+            return (char)(d+'0');
+        else
+            return (char)(d-10+'A');
+    }
+
+    // Unsigns a byte that is stored in an integer.
+    private int unsign(int c) {
+        if (c >=0)
+            return c;
+        else
+            return 256+c;
     }
 }
