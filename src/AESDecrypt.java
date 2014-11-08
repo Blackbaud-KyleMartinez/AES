@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Timer;
 
 /**
  * Created by kyle on 10/24/14.
@@ -127,7 +128,10 @@ public class AESDecrypt {
     public void decrypt() throws IOException{
 
         String line;
+        int count = 0;
+        long startTime = System.currentTimeMillis();
         while((line = encryptedFile.readLine()) != null) {
+            count++;
             state = createGrid(getLine(line), new int[4][4]);
             printState();
             expandedKey = keyExpansion();
@@ -176,6 +180,11 @@ public class AESDecrypt {
             decryptedFile.write(decryptedLine + "\n");
         }
         decryptedFile.close();
+        long endTime = System.currentTimeMillis();
+        System.out.println("Number of lines of plaintext: " + count);
+        System.out.println("Number of Bytes: " + count * 8);
+        System.out.println("Time Elapsed: " + (endTime - startTime) * 0.001);
+        System.out.println("Bytes per Second: " + (count * 8) / ((endTime - startTime) * 0.001));
     }
 
     private int[][] createGrid(String line, int[][] grid){

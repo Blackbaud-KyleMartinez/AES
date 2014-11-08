@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Timer;
 
 
 /**
@@ -20,6 +21,7 @@ public class AESEncrypt {
     private String key;
     private BufferedReader plainTextFile;
     private BufferedWriter encryptedFile;
+    private static final long  MEGABYTE = 1024L * 1024L;
 
     final static int[][] sBox = {
 
@@ -114,9 +116,9 @@ public class AESEncrypt {
     private int[][] expandedKey;
 
 
-
     public AESEncrypt(BufferedReader key, BufferedReader inputFile, BufferedWriter outputFile){
         try{
+
             this.key = getLine(key.readLine());
         } catch (IOException e){
             e.printStackTrace();
@@ -133,7 +135,10 @@ public class AESEncrypt {
             return;
         }
         String line;
+        int count = 0;
+        long startTime = System.currentTimeMillis();
         while((line = plainTextFile.readLine()) != null){
+            count++;
             if(validLine(getLine(line))){
                 state = createGrid(getLine(line), new int[4][4]);
                 printState();
@@ -183,6 +188,11 @@ public class AESEncrypt {
         }
 
         encryptedFile.close();
+        long endTime = System.currentTimeMillis();
+        System.out.println("count: " + count);
+        System.out.println("Number of Bytes: " + count * 8);
+        System.out.println("Time Elapsed: " + (endTime - startTime) * 0.001);
+        System.out.println("Bytes per Second: " + (count * 8) / ((endTime - startTime) * 0.001));
     }
 
     private String getStringFromState(){
